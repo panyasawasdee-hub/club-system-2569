@@ -1,1 +1,883 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
+  <title>ระบบบันทึกข้อมูลการสอนชุมนุม</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  >
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            thai: ['Noto Sans Thai', 'sans-serif']
+          },
+          boxShadow: {
+            luxury: '0 24px 80px rgba(15, 23, 42, 0.16)'
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    * {
+      font-family: 'Noto Sans Thai', sans-serif;
+    }
+
+    body {
+      background:
+        radial-gradient(circle at top left, rgba(251, 191, 36, 0.24), transparent 32%),
+        radial-gradient(circle at top right, rgba(59, 130, 246, 0.18), transparent 32%),
+        linear-gradient(135deg, #f8fafc 0%, #eef2ff 45%, #fefce8 100%);
+      min-height: 100vh;
+    }
+
+    .glass {
+      background: rgba(255, 255, 255, 0.84);
+      border: 1px solid rgba(148, 163, 184, 0.28);
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+    }
+
+    .glass-soft {
+      background: rgba(255, 255, 255, 0.68);
+      border: 1px solid rgba(148, 163, 184, 0.24);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+
+    .luxury-border {
+      border: 1px solid rgba(217, 119, 6, 0.22);
+    }
+
+    .fade-up {
+      animation: fadeUp 0.55s ease both;
+    }
+
+    .fade-in {
+      animation: fadeIn 0.3s ease both;
+    }
+
+    .scale-in {
+      animation: scaleIn 0.25s ease both;
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(18px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+
+    @keyframes scaleIn {
+      from {
+        opacity: 0;
+        transform: scale(0.96) translateY(8px);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    .custom-scroll::-webkit-scrollbar {
+      height: 8px;
+      width: 8px;
+    }
+
+    .custom-scroll::-webkit-scrollbar-track {
+      background: rgba(226, 232, 240, 0.75);
+    }
+
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: rgba(100, 116, 139, 0.36);
+      border-radius: 999px;
+    }
+
+    .custom-scroll::-webkit-scrollbar-thumb:hover {
+      background: rgba(217, 119, 6, 0.55);
+    }
+  </style>
+</head>
+
+<body class="font-thai text-slate-900">
+  <div id="app" class="min-h-screen px-4 py-6 sm:px-6 lg:px-8">
+    <div class="mx-auto max-w-7xl">
+
+      <header class="fade-up mb-6 overflow-hidden rounded-[2rem] glass luxury-border shadow-luxury">
+        <div class="relative p-6 sm:p-8">
+          <div class="absolute -right-16 -top-20 h-52 w-52 rounded-full bg-amber-300/20 blur-3xl"></div>
+          <div class="absolute -bottom-20 -left-20 h-56 w-56 rounded-full bg-blue-400/16 blur-3xl"></div>
+
+          <div class="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <div class="mb-4 inline-flex items-center gap-2 rounded-full border border-amber-300 bg-amber-100 px-4 py-2 text-xs font-semibold text-amber-700">
+                <span class="h-2 w-2 rounded-full bg-amber-500 shadow-[0_0_18px_rgba(245,158,11,0.7)]"></span>
+                ระบบชุมนุม ปีการศึกษา 2569
+              </div>
+
+              <h1 class="text-2xl font-extrabold tracking-tight text-slate-950 sm:text-4xl">
+                ระบบบันทึกข้อมูลการสอนชุมนุม
+              </h1>
+
+              <p id="schoolNameText" class="mt-3 max-w-2xl text-sm leading-7 text-slate-600 sm:text-base">
+                โรงเรียนคำสร้อยพิทยาสรรค์ · จัดเก็บข้อมูลด้วย Google Sheet และ Google Apps Script API
+              </p>
+            </div>
+
+            <div class="flex flex-col gap-3 sm:flex-row">
+              <button
+                onclick="refreshData()"
+                class="group rounded-2xl border border-slate-300 bg-white/75 px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition duration-300 hover:-translate-y-0.5 hover:border-slate-400 hover:bg-white"
+              >
+                <span class="inline-flex items-center gap-2">
+                  <span class="transition duration-300 group-hover:rotate-180">↻</span>
+                  รีเฟรชข้อมูล
+                </span>
+              </button>
+
+              <button
+                onclick="openCreateModal()"
+                class="rounded-2xl bg-gradient-to-r from-amber-400 to-yellow-600 px-5 py-3 text-sm font-bold text-slate-950 shadow-lg shadow-amber-700/20 transition duration-300 hover:-translate-y-0.5 hover:shadow-amber-700/30"
+              >
+                + เพิ่มข้อมูลชุมนุม
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <section class="fade-up mb-6 grid gap-4 md:grid-cols-3" style="animation-delay: 0.08s;">
+        <div class="glass-soft rounded-3xl p-5 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-amber-300/60">
+          <p class="text-sm font-medium text-slate-500">ชุมนุมทั้งหมด</p>
+          <div class="mt-3 flex items-end justify-between">
+            <p id="totalCount" class="text-4xl font-extrabold text-slate-950">0</p>
+            <span class="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600">รายการ</span>
+          </div>
+        </div>
+
+        <div class="glass-soft rounded-3xl p-5 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-blue-300/60">
+          <p class="text-sm font-medium text-slate-500">ระดับ ม.ต้น</p>
+          <div class="mt-3 flex items-end justify-between">
+            <p id="lowerCount" class="text-4xl font-extrabold text-slate-950">0</p>
+            <span class="rounded-full bg-blue-100 px-3 py-1 text-xs text-blue-700">ม.ต้น</span>
+          </div>
+        </div>
+
+        <div class="glass-soft rounded-3xl p-5 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-amber-300/60">
+          <p class="text-sm font-medium text-slate-500">ระดับ ม.ปลาย</p>
+          <div class="mt-3 flex items-end justify-between">
+            <p id="upperCount" class="text-4xl font-extrabold text-slate-950">0</p>
+            <span class="rounded-full bg-amber-100 px-3 py-1 text-xs text-amber-700">ม.ปลาย</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="fade-up mb-5 rounded-3xl glass-soft p-4 shadow-sm" style="animation-delay: 0.14s;">
+        <div class="grid gap-3 lg:grid-cols-[1fr_220px]">
+          <div class="relative">
+            <input
+              id="searchInput"
+              type="text"
+              placeholder="ค้นหาชื่อชุมนุม / รายละเอียด / ครูผู้สอน / ห้องเรียน..."
+              oninput="applyFilters()"
+              class="w-full rounded-2xl border border-slate-300 bg-white/90 px-5 py-3 pl-11 text-sm text-slate-900 outline-none transition duration-300 placeholder:text-slate-400 focus:border-amber-500/70 focus:ring-4 focus:ring-amber-400/20"
+            >
+            <div class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+              🔎
+            </div>
+          </div>
+
+          <select
+            id="levelFilter"
+            onchange="applyFilters()"
+            class="rounded-2xl border border-slate-300 bg-white/90 px-5 py-3 text-sm text-slate-900 outline-none transition duration-300 focus:border-amber-500/70 focus:ring-4 focus:ring-amber-400/20"
+          >
+            <option value="all">ทุกระดับชั้น</option>
+            <option value="ม.ต้น">ม.ต้น</option>
+            <option value="ม.ปลาย">ม.ปลาย</option>
+          </select>
+        </div>
+      </section>
+
+      <section class="fade-up overflow-hidden rounded-3xl glass shadow-luxury" style="animation-delay: 0.2s;">
+        <div class="border-b border-slate-200/80 px-5 py-4">
+          <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 class="text-lg font-bold text-slate-950">รายการข้อมูลชุมนุม</h2>
+              <p id="resultText" class="mt-1 text-sm text-slate-500">กำลังโหลดข้อมูล...</p>
+            </div>
+            <div id="loadingBadge" class="hidden rounded-full bg-amber-100 px-4 py-2 text-xs font-semibold text-amber-700">
+              กำลังประมวลผล...
+            </div>
+          </div>
+        </div>
+
+        <div class="custom-scroll overflow-x-auto">
+          <table class="min-w-full text-left text-sm">
+            <thead class="bg-slate-100/90 text-xs uppercase tracking-wide text-slate-500">
+              <tr>
+                <th class="px-5 py-4">ลำดับ</th>
+                <th class="px-5 py-4">ชื่อชุมนุม</th>
+                <th class="px-5 py-4">รายละเอียด</th>
+                <th class="px-5 py-4">ครูผู้สอน</th>
+                <th class="px-5 py-4">ระดับ</th>
+                <th class="px-5 py-4">ห้อง</th>
+                <th class="px-5 py-4">แก้ไขล่าสุด</th>
+                <th class="px-5 py-4 text-right">จัดการ</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody" class="divide-y divide-slate-200/80">
+              <tr>
+                <td colspan="8" class="px-5 py-10 text-center text-slate-500">
+                  กำลังโหลดข้อมูล...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div id="formModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/45 px-4 py-6 backdrop-blur-sm">
+    <div class="scale-in custom-scroll max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-[2rem] glass luxury-border shadow-luxury">
+      <div class="border-b border-slate-200/80 p-6">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-[0.22em] text-amber-600">Club Form</p>
+            <h3 id="modalTitle" class="mt-2 text-2xl font-extrabold text-slate-950">เพิ่มข้อมูลชุมนุม</h3>
+            <p class="mt-1 text-sm text-slate-500">กรอกข้อมูลให้ครบถ้วนก่อนบันทึก</p>
+          </div>
+
+          <button
+            onclick="closeFormModal()"
+            class="rounded-2xl border border-slate-300 bg-white px-4 py-2 text-slate-600 shadow-sm transition duration-300 hover:border-red-300 hover:text-red-600"
+          >
+            ✕
+          </button>
+        </div>
+      </div>
+
+      <form onsubmit="submitClubForm(event)" class="space-y-5 p-6">
+        <input type="hidden" id="clubId">
+
+        <div>
+          <label class="mb-2 block text-sm font-semibold text-slate-700">
+            ชื่อชุมนุม <span class="text-amber-600">*</span>
+          </label>
+          <input
+            id="clubName"
+            type="text"
+            class="w-full rounded-2xl border border-slate-300 bg-white/95 px-4 py-3 text-slate-900 outline-none transition duration-300 placeholder:text-slate-400 focus:border-amber-500/70 focus:ring-4 focus:ring-amber-400/20"
+            placeholder="เช่น ชุมนุมคณิตคิดสนุก"
+          >
+        </div>
+
+        <div>
+          <label class="mb-2 block text-sm font-semibold text-slate-700">
+            รายละเอียด
+          </label>
+          <textarea
+            id="description"
+            rows="4"
+            class="w-full resize-none rounded-2xl border border-slate-300 bg-white/95 px-4 py-3 text-slate-900 outline-none transition duration-300 placeholder:text-slate-400 focus:border-amber-500/70 focus:ring-4 focus:ring-amber-400/20"
+            placeholder="อธิบายลักษณะกิจกรรมหรือเนื้อหาที่สอนในชุมนุม"
+          ></textarea>
+        </div>
+
+        <div class="grid gap-5 md:grid-cols-2">
+          <div>
+            <label class="mb-2 block text-sm font-semibold text-slate-700">
+              ครูผู้สอน <span class="text-amber-600">*</span>
+            </label>
+            <input
+              id="teacherName"
+              type="text"
+              class="w-full rounded-2xl border border-slate-300 bg-white/95 px-4 py-3 text-slate-900 outline-none transition duration-300 placeholder:text-slate-400 focus:border-amber-500/70 focus:ring-4 focus:ring-amber-400/20"
+              placeholder="ชื่อ-สกุลครูผู้สอน"
+            >
+          </div>
+
+          <div>
+            <label class="mb-2 block text-sm font-semibold text-slate-700">
+              ระดับชั้น <span class="text-amber-600">*</span>
+            </label>
+            <select
+              id="level"
+              class="w-full rounded-2xl border border-slate-300 bg-white/95 px-4 py-3 text-slate-900 outline-none transition duration-300 focus:border-amber-500/70 focus:ring-4 focus:ring-amber-400/20"
+            >
+              <option value="">เลือกระดับชั้น</option>
+              <option value="ม.ต้น">ม.ต้น</option>
+              <option value="ม.ปลาย">ม.ปลาย</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid gap-5 md:grid-cols-2">
+          <div>
+            <label class="mb-2 block text-sm font-semibold text-slate-700">
+              ห้องที่ใช้สอนชุมนุม <span class="text-amber-600">*</span>
+            </label>
+            <input
+              id="room"
+              type="text"
+              class="w-full rounded-2xl border border-slate-300 bg-white/95 px-4 py-3 text-slate-900 outline-none transition duration-300 placeholder:text-slate-400 focus:border-amber-500/70 focus:ring-4 focus:ring-amber-400/20"
+              placeholder="เช่น ห้อง 321 / ห้องคอม 1"
+            >
+          </div>
+
+          <div>
+            <label class="mb-2 block text-sm font-semibold text-slate-700">
+              หมายเหตุ
+            </label>
+            <input
+              id="note"
+              type="text"
+              class="w-full rounded-2xl border border-slate-300 bg-white/95 px-4 py-3 text-slate-900 outline-none transition duration-300 placeholder:text-slate-400 focus:border-amber-500/70 focus:ring-4 focus:ring-amber-400/20"
+              placeholder="ถ้ามี"
+            >
+          </div>
+        </div>
+
+        <div id="formError" class="hidden rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"></div>
+
+        <div class="flex flex-col-reverse gap-3 border-t border-slate-200/80 pt-5 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onclick="closeFormModal()"
+            class="rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition duration-300 hover:border-slate-400 hover:bg-slate-50"
+          >
+            ยกเลิก
+          </button>
+
+          <button
+            id="saveButton"
+            type="submit"
+            class="rounded-2xl bg-gradient-to-r from-amber-400 to-yellow-600 px-6 py-3 text-sm font-extrabold text-slate-950 shadow-lg shadow-amber-700/20 transition duration-300 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            บันทึกข้อมูล
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="deleteModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/45 px-4 py-6 backdrop-blur-sm">
+    <div class="scale-in w-full max-w-md rounded-[2rem] glass luxury-border p-6 shadow-luxury">
+      <div class="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-red-100 text-2xl font-black text-red-600">
+        !
+      </div>
+
+      <h3 class="text-2xl font-extrabold text-slate-950">ยืนยันการลบข้อมูล</h3>
+      <p class="mt-3 text-sm leading-7 text-slate-600">
+        ระบบจะลบแบบ Soft Delete ข้อมูลจะไม่หายถาวรจาก Google Sheet แต่จะถูกซ่อนจากหน้าเว็บ
+      </p>
+
+      <div id="deleteTargetText" class="mt-4 rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-700"></div>
+
+      <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+        <button
+          onclick="closeDeleteModal()"
+          class="rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition duration-300 hover:border-slate-400 hover:bg-slate-50"
+        >
+          ยกเลิก
+        </button>
+
+        <button
+          id="confirmDeleteButton"
+          onclick="confirmDelete()"
+          class="rounded-2xl bg-red-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-red-500/20 transition duration-300 hover:-translate-y-0.5 hover:bg-red-400 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          ลบข้อมูล
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="fixed bottom-5 right-5 z-[60] hidden max-w-sm rounded-2xl border border-slate-200 bg-white/95 px-5 py-4 text-sm text-slate-900 shadow-luxury fade-in">
+    <div id="toastText"></div>
+  </div>
+
+  <script>
+    const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbyFE1yD61vdBmDRSwaS6XPrYb2jubo-Aa1unxxBSRA_QzNXQ7SMAZqS-jYJAIts9uCY/exec';
+
+    let settings = {
+      academicYear: '2569',
+      schoolName: 'โรงเรียนคำสร้อยพิทยาสรรค์',
+      levels: ['ม.ต้น', 'ม.ปลาย']
+    };
+
+    let allClubs = [];
+    let filteredClubs = [];
+    let deleteTargetId = null;
+
+    document.addEventListener('DOMContentLoaded', function() {
+      loadSettings();
+      loadClubs();
+    });
+
+    async function apiGet(action) {
+      const url = GAS_API_URL + '?action=' + encodeURIComponent(action) + '&t=' + Date.now();
+
+      const response = await fetch(url, {
+        method: 'GET',
+        redirect: 'follow'
+      });
+
+      if (!response.ok) {
+        throw new Error('เชื่อมต่อ API ไม่สำเร็จ');
+      }
+
+      return response.json();
+    }
+
+    async function apiPost(action, payload) {
+      const response = await fetch(GAS_API_URL, {
+        method: 'POST',
+        redirect: 'follow',
+        headers: {
+          'Content-Type': 'text/plain;charset=utf-8'
+        },
+        body: JSON.stringify({
+          action: action,
+          ...payload
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('เชื่อมต่อ API ไม่สำเร็จ');
+      }
+
+      return response.json();
+    }
+
+    async function loadSettings() {
+      try {
+        const result = await apiGet('settings');
+
+        if (result && result.success) {
+          settings = result.data || settings;
+
+          document.getElementById('schoolNameText').textContent =
+            settings.schoolName + ' · ปีการศึกษา ' + settings.academicYear + ' · จัดเก็บข้อมูลด้วย Google Sheet และ Google Apps Script API';
+        }
+      } catch (error) {
+        console.warn(error);
+      }
+    }
+
+    async function loadClubs() {
+      setLoading(true);
+
+      try {
+        const result = await apiGet('list');
+
+        if (!result || !result.success) {
+          throw new Error(result && result.message ? result.message : 'โหลดข้อมูลไม่สำเร็จ');
+        }
+
+        allClubs = Array.isArray(result.data) ? result.data : [];
+        applyFilters();
+      } catch (error) {
+        renderEmpty('โหลดข้อมูลไม่สำเร็จ: ' + getErrorMessage(error));
+        showToast('โหลดข้อมูลไม่สำเร็จ', 'error');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    function refreshData() {
+      loadClubs();
+      showToast('กำลังรีเฟรชข้อมูล...', 'info');
+    }
+
+    function applyFilters() {
+      const keyword = document.getElementById('searchInput').value.trim().toLowerCase();
+      const level = document.getElementById('levelFilter').value;
+
+      filteredClubs = allClubs.filter(function(item) {
+        const matchLevel = level === 'all' || item.level === level;
+
+        const haystack = [
+          item.clubName,
+          item.description,
+          item.teacherName,
+          item.level,
+          item.room,
+          item.note
+        ].join(' ').toLowerCase();
+
+        const matchKeyword = !keyword || haystack.includes(keyword);
+
+        return matchLevel && matchKeyword;
+      });
+
+      renderSummary();
+      renderTable(filteredClubs);
+    }
+
+    function renderSummary() {
+      document.getElementById('totalCount').textContent = allClubs.length;
+      document.getElementById('lowerCount').textContent =
+        allClubs.filter(item => item.level === 'ม.ต้น').length;
+      document.getElementById('upperCount').textContent =
+        allClubs.filter(item => item.level === 'ม.ปลาย').length;
+
+      document.getElementById('resultText').textContent =
+        'แสดง ' + filteredClubs.length + ' จากทั้งหมด ' + allClubs.length + ' รายการ';
+    }
+
+    function renderTable(records) {
+      const tableBody = document.getElementById('tableBody');
+
+      if (!records.length) {
+        renderEmpty('ไม่พบข้อมูลชุมนุม');
+        return;
+      }
+
+      tableBody.innerHTML = records.map(function(item, index) {
+        const levelBadge = item.level === 'ม.ต้น'
+          ? 'bg-blue-100 text-blue-700 border-blue-200'
+          : 'bg-amber-100 text-amber-700 border-amber-200';
+
+        return `
+          <tr class="transition duration-300 hover:bg-amber-50/80">
+            <td class="px-5 py-4 text-slate-500">${index + 1}</td>
+
+            <td class="px-5 py-4">
+              <div class="min-w-[180px]">
+                <p class="font-bold text-slate-950">${escapeHtml(item.clubName || '-')}</p>
+                <p class="mt-1 text-xs text-slate-400">${escapeHtml(item.id || '')}</p>
+              </div>
+            </td>
+
+            <td class="px-5 py-4">
+              <p class="line-clamp-2 max-w-xs text-slate-600">
+                ${escapeHtml(item.description || '-')}
+              </p>
+            </td>
+
+            <td class="px-5 py-4 text-slate-700">
+              ${escapeHtml(item.teacherName || '-')}
+            </td>
+
+            <td class="px-5 py-4">
+              <span class="inline-flex rounded-full border px-3 py-1 text-xs font-bold ${levelBadge}">
+                ${escapeHtml(item.level || '-')}
+              </span>
+            </td>
+
+            <td class="px-5 py-4">
+              <span class="rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700">
+                ${escapeHtml(item.room || '-')}
+              </span>
+            </td>
+
+            <td class="px-5 py-4 text-xs text-slate-500">
+              ${escapeHtml(item.updatedAt || '-')}
+            </td>
+
+            <td class="px-5 py-4">
+              <div class="flex justify-end gap-2">
+                <button
+                  onclick="openEditModal('${escapeJs(item.id)}')"
+                  class="rounded-xl border border-amber-200 bg-amber-100 px-3 py-2 text-xs font-bold text-amber-700 transition duration-300 hover:-translate-y-0.5 hover:bg-amber-200"
+                >
+                  แก้ไข
+                </button>
+
+                <button
+                  onclick="openDeleteModal('${escapeJs(item.id)}')"
+                  class="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-600 transition duration-300 hover:-translate-y-0.5 hover:bg-red-100"
+                >
+                  ลบ
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function renderEmpty(message) {
+      document.getElementById('tableBody').innerHTML = `
+        <tr>
+          <td colspan="8" class="px-5 py-12 text-center">
+            <div class="mx-auto max-w-md">
+              <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-2xl text-slate-500">
+                ⎯
+              </div>
+              <p class="font-semibold text-slate-600">${escapeHtml(message)}</p>
+              <p class="mt-2 text-sm text-slate-400">ลองเพิ่มข้อมูลชุมนุมใหม่ หรือปรับเงื่อนไขการค้นหา</p>
+            </div>
+          </td>
+        </tr>
+      `;
+    }
+
+    function openCreateModal() {
+      resetForm();
+      document.getElementById('modalTitle').textContent = 'เพิ่มข้อมูลชุมนุม';
+      document.getElementById('formModal').classList.remove('hidden');
+      document.getElementById('formModal').classList.add('flex');
+      setTimeout(function() {
+        document.getElementById('clubName').focus();
+      }, 100);
+    }
+
+    function openEditModal(id) {
+      const club = allClubs.find(function(item) {
+        return item.id === id;
+      });
+
+      if (!club) {
+        showToast('ไม่พบข้อมูลที่ต้องการแก้ไข', 'error');
+        return;
+      }
+
+      resetForm();
+
+      document.getElementById('modalTitle').textContent = 'แก้ไขข้อมูลชุมนุม';
+      document.getElementById('clubId').value = club.id || '';
+      document.getElementById('clubName').value = club.clubName || '';
+      document.getElementById('description').value = club.description || '';
+      document.getElementById('teacherName').value = club.teacherName || '';
+      document.getElementById('level').value = club.level || '';
+      document.getElementById('room').value = club.room || '';
+      document.getElementById('note').value = club.note || '';
+
+      document.getElementById('formModal').classList.remove('hidden');
+      document.getElementById('formModal').classList.add('flex');
+    }
+
+    function closeFormModal() {
+      document.getElementById('formModal').classList.add('hidden');
+      document.getElementById('formModal').classList.remove('flex');
+      resetForm();
+    }
+
+    function resetForm() {
+      document.getElementById('clubId').value = '';
+      document.getElementById('clubName').value = '';
+      document.getElementById('description').value = '';
+      document.getElementById('teacherName').value = '';
+      document.getElementById('level').value = '';
+      document.getElementById('room').value = '';
+      document.getElementById('note').value = '';
+      hideFormError();
+      setSaveLoading(false);
+    }
+
+    async function submitClubForm(event) {
+      event.preventDefault();
+      hideFormError();
+
+      const id = document.getElementById('clubId').value;
+
+      const payload = {
+        clubName: document.getElementById('clubName').value.trim(),
+        description: document.getElementById('description').value.trim(),
+        teacherName: document.getElementById('teacherName').value.trim(),
+        level: document.getElementById('level').value.trim(),
+        room: document.getElementById('room').value.trim(),
+        note: document.getElementById('note').value.trim()
+      };
+
+      const validationMessage = validateForm(payload);
+      if (validationMessage) {
+        showFormError(validationMessage);
+        return;
+      }
+
+      setSaveLoading(true);
+
+      try {
+        const result = id
+          ? await apiPost('update', { id: id, data: payload })
+          : await apiPost('create', { data: payload });
+
+        if (!result || !result.success) {
+          throw new Error(result && result.message ? result.message : 'บันทึกข้อมูลไม่สำเร็จ');
+        }
+
+        closeFormModal();
+        showToast(result.message || 'บันทึกข้อมูลสำเร็จ', 'success');
+        loadClubs();
+
+      } catch (error) {
+        showFormError(getErrorMessage(error));
+      } finally {
+        setSaveLoading(false);
+      }
+    }
+
+    function validateForm(data) {
+      if (!data.clubName) return 'กรุณากรอกชื่อชุมนุม';
+      if (!data.teacherName) return 'กรุณากรอกชื่อครูผู้สอน';
+      if (!data.level) return 'กรุณาเลือกระดับชั้น';
+      if (!data.room) return 'กรุณากรอกห้องที่ใช้สอนชุมนุม';
+      return '';
+    }
+
+    function openDeleteModal(id) {
+      const club = allClubs.find(function(item) {
+        return item.id === id;
+      });
+
+      if (!club) {
+        showToast('ไม่พบข้อมูลที่ต้องการลบ', 'error');
+        return;
+      }
+
+      deleteTargetId = id;
+
+      document.getElementById('deleteTargetText').innerHTML = `
+        <p class="font-bold text-slate-950">${escapeHtml(club.clubName || '-')}</p>
+        <p class="mt-1 text-xs text-slate-500">${escapeHtml(club.teacherName || '-')} · ${escapeHtml(club.level || '-')} · ${escapeHtml(club.room || '-')}</p>
+      `;
+
+      document.getElementById('deleteModal').classList.remove('hidden');
+      document.getElementById('deleteModal').classList.add('flex');
+    }
+
+    function closeDeleteModal() {
+      deleteTargetId = null;
+      document.getElementById('deleteModal').classList.add('hidden');
+      document.getElementById('deleteModal').classList.remove('flex');
+      setDeleteLoading(false);
+    }
+
+    async function confirmDelete() {
+      if (!deleteTargetId) {
+        showToast('ไม่พบข้อมูลที่ต้องการลบ', 'error');
+        return;
+      }
+
+      setDeleteLoading(true);
+
+      try {
+        const result = await apiPost('delete', {
+          id: deleteTargetId
+        });
+
+        if (!result || !result.success) {
+          throw new Error(result && result.message ? result.message : 'ลบข้อมูลไม่สำเร็จ');
+        }
+
+        closeDeleteModal();
+        showToast(result.message || 'ลบข้อมูลสำเร็จ', 'success');
+        loadClubs();
+
+      } catch (error) {
+        showToast(getErrorMessage(error), 'error');
+      } finally {
+        setDeleteLoading(false);
+      }
+    }
+
+    function setLoading(isLoading) {
+      const badge = document.getElementById('loadingBadge');
+
+      if (isLoading) {
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+
+    function setSaveLoading(isLoading) {
+      const button = document.getElementById('saveButton');
+      button.disabled = isLoading;
+      button.textContent = isLoading ? 'กำลังบันทึก...' : 'บันทึกข้อมูล';
+    }
+
+    function setDeleteLoading(isLoading) {
+      const button = document.getElementById('confirmDeleteButton');
+      button.disabled = isLoading;
+      button.textContent = isLoading ? 'กำลังลบ...' : 'ลบข้อมูล';
+    }
+
+    function showFormError(message) {
+      const box = document.getElementById('formError');
+      box.textContent = message;
+      box.classList.remove('hidden');
+    }
+
+    function hideFormError() {
+      const box = document.getElementById('formError');
+      box.textContent = '';
+      box.classList.add('hidden');
+    }
+
+    function showToast(message, type) {
+      const toast = document.getElementById('toast');
+      const toastText = document.getElementById('toastText');
+
+      let className = 'fixed bottom-5 right-5 z-[60] hidden max-w-sm rounded-2xl border px-5 py-4 text-sm shadow-luxury fade-in ';
+
+      if (type === 'success') {
+        className += 'border-emerald-200 bg-emerald-50 text-emerald-700';
+      } else if (type === 'error') {
+        className += 'border-red-200 bg-red-50 text-red-700';
+      } else {
+        className += 'border-slate-200 bg-white/95 text-slate-800';
+      }
+
+      toast.className = className;
+      toastText.textContent = message;
+      toast.classList.remove('hidden');
+
+      setTimeout(function() {
+        toast.classList.add('hidden');
+      }, 3200);
+    }
+
+    function getErrorMessage(error) {
+      if (!error) return 'เกิดข้อผิดพลาด';
+      if (typeof error === 'string') return error;
+      return error.message || 'เกิดข้อผิดพลาด';
+    }
+
+    function escapeHtml(value) {
+      return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function escapeJs(value) {
+      return String(value || '')
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'")
+        .replace(/"/g, '\\"');
+    }
+  </script>
+</body>
+</html>
