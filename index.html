@@ -693,48 +693,72 @@
       setSaveLoading(false);
     }
 
-    async function submitClubForm(event) {
-      event.preventDefault();
-      hideFormError();
+async function submitClubForm(event) {
+  event.preventDefault();
+  hideFormError();
 
-      const id = document.getElementById('clubId').value;
+  const id = document.getElementById('clubId').value;
 
-      const payload = {
-        clubName: document.getElementById('clubName').value.trim(),
-        description: document.getElementById('description').value.trim(),
-        teacherName: document.getElementById('teacherName').value.trim(),
-        level: document.getElementById('level').value.trim(),
-        room: document.getElementById('room').value.trim(),
-        note: document.getElementById('note').value.trim()
-      };
+  const payload = {
+    clubName: document.getElementById('clubName').value.trim(),
+    description: document.getElementById('description').value.trim(),
+    teacherName: document.getElementById('teacherName').value.trim(),
+    level: document.getElementById('level').value.trim(),
+    room: document.getElementById('room').value.trim(),
+    note: document.getElementById('note').value.trim()
+  };
 
-      const validationMessage = validateForm(payload);
-      if (validationMessage) {
-        showFormError(validationMessage);
-        return;
-      }
+  const validationMessage = validateForm(payload);
+  if (validationMessage) {
+    showFormError(validationMessage);
+    return;
+  }
 
-      setSaveLoading(true);
+  let adminPassword = '';
 
-      try {
-        const result = id
-          ? await apiPost('update', { id: id, data: payload })
-          : await apiPost('create', { data: payload });
+  // ถ้าเป็นการแก้ไข ต้องถามรหัสผ่านผู้ดูแล
+  if (id) {
+    adminPassword = prompt('กรุณากรอกรหัสผ่านผู้ดูแลเพื่อแก้ไขข้อมูล');
 
-        if (!result || !result.success) {
-          throw new Error(result && result.message ? result.message : 'บันทึกข้อมูลไม่สำเร็จ');
-        }
-
-        closeFormModal();
-        showToast(result.message || 'บันทึกข้อมูลสำเร็จ', 'success');
-        loadClubs();
-
-      } catch (error) {
-        showFormError(getErrorMessage(error));
-      } finally {
-        setSaveLoading(false);
-      }
+    if (adminPassword === null) {
+      return;
     }
+
+    adminPassword = adminPassword.trim();
+
+    if (!adminPassword) {
+      showFormError('กรุณากรอกรหัสผ่านผู้ดูแล');
+      return;
+    }
+  }
+
+  setSaveLoading(true);
+
+  try {
+    const result = id
+      ? await apiPost('update', {
+          id: id,
+          data: payload,
+          adminPassword: adminPassword
+        })
+      : await apiPost('create', {
+          data: payload
+        });
+
+    if (!result || !result.success) {
+      throw new Error(result && result.message ? result.message : 'บันทึกข้อมูลไม่สำเร็จ');
+    }
+
+    closeFormModal();
+    showToast(result.message || 'บันทึกข้อมูลสำเร็จ', 'success');
+    loadClubs();
+
+  } catch (error) {
+    showFormError(getErrorMessage(error));
+  } finally {
+    setSaveLoading(false);
+  }
+}
 
     function validateForm(data) {
       if (!data.clubName) return 'กรุณากรอกชื่อชุมนุม';
@@ -772,33 +796,45 @@
       setDeleteLoading(false);
     }
 
-    async function confirmDelete() {
-      if (!deleteTargetId) {
-        showToast('ไม่พบข้อมูลที่ต้องการลบ', 'error');
-        return;
-      }
+async function confirmDelete() {
+  if (!deleteTargetId) {
+    showToast('ไม่พบข้อมูลที่ต้องการลบ', 'error');
+    return;
+  }
 
-      setDeleteLoading(true);
+  const adminPassword = prompt('กรุณากรอกรหัสผ่านผู้ดูแลเพื่อลบข้อมูล');
 
-      try {
-        const result = await apiPost('delete', {
-          id: deleteTargetId
-        });
+  if (adminPassword === null) {
+    return;
+  }
 
-        if (!result || !result.success) {
-          throw new Error(result && result.message ? result.message : 'ลบข้อมูลไม่สำเร็จ');
-        }
+  if (!adminPassword.trim()) {
+    showToast('กรุณากรอกรหัสผ่านผู้ดูแล', 'error');
+    return;
+  }
 
-        closeDeleteModal();
-        showToast(result.message || 'ลบข้อมูลสำเร็จ', 'success');
-        loadClubs();
+  setDeleteLoading(true);
 
-      } catch (error) {
-        showToast(getErrorMessage(error), 'error');
-      } finally {
-        setDeleteLoading(false);
-      }
+  try {
+    const result = await apiPost('delete', {
+      id: deleteTargetId,
+      adminPassword: adminPassword.trim()
+    });
+
+    if (!result || !result.success) {
+      throw new Error(result && result.message ? result.message : 'ลบข้อมูลไม่สำเร็จ');
     }
+
+    closeDeleteModal();
+    showToast(result.message || 'ลบข้อมูลสำเร็จ', 'success');
+    loadClubs();
+
+  } catch (error) {
+    showToast(getErrorMessage(error), 'error');
+  } finally {
+    setDeleteLoading(false);
+  }
+}
 
     function setLoading(isLoading) {
       const badge = document.getElementById('loadingBadge');
